@@ -317,10 +317,14 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     // In a real implementation, you would verify the token here
-    // For now, we'll just update the password
+    // For now, we'll just update the password without email check
+    // The token would be validated against a stored hash in production
+
+    // Find user by token (simplified - in production, you'd verify the token)
     const user = await this.prisma.user.findFirst({
       where: {
-        email: dto.email,
+        // In production, you'd check resetToken hash here
+        email: dto.email, // This assumes email is passed
       },
     });
 
