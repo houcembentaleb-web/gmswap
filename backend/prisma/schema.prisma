@@ -58,6 +58,7 @@ model User {
   profile       UserProfile?
   reputation    UserReputation?
   trustScore    TrustScore?
+  trustScores   TrustScore[] @relation("UserTrustScores")  // ✅ Correction ajoutée ici
   appeals       Appeal[]
   moderationActions ModerationAction[]
   reviewsGiven  Review[] @relation("reviewsGiven")
@@ -76,7 +77,6 @@ model User {
   pushTokens PushToken[]
   trustEdgesFrom TrustEdge[] @relation("TrustFrom")
   trustEdgesTo TrustEdge[] @relation("TrustTo")
-  trustScores TrustScore[]
   moderatedReports Report[] @relation("ModeratedReports")
   moderationAuditLogs ModerationAuditLog[]
   appealsReviewed Appeal[] @relation("AppealReviewer")
