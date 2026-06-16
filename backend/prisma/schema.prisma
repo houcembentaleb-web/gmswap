@@ -197,6 +197,7 @@ model Listing {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  // Relations
   images        ListingImage[]
   transactions  Transaction[]
   orders        Order[]
@@ -469,9 +470,6 @@ model Transaction {
   orderId     String?
   order       Order?   @relation(fields: [orderId], references: [id])
   
-  reservationId String?
-  reservation   Reservation? @relation(fields: [reservationId], references: [id])
-  
   listingId   String
   listing     Listing  @relation(fields: [listingId], references: [id])
   
@@ -503,6 +501,8 @@ model Transaction {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  reservations Reservation[]
 
   @@index([listingId])
   @@index([buyerId])
@@ -555,6 +555,8 @@ model Order {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  transactions  Transaction[]
+
   @@index([buyerId])
   @@index([sellerId])
   @@index([listingId])
@@ -589,7 +591,7 @@ model Reservation {
   
   expiresAt   DateTime
   
-  transactionId String? @unique
+  transactionId String?
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
   
   createdAt   DateTime @default(now())
