@@ -22,7 +22,7 @@ export class AdminService {
   async getDashboardStats() {
     const cacheKey = 'admin:dashboard:stats';
     const cached = await this.cache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) return JSON.parse(cached);
 
     const [
       totalUsers,
@@ -85,7 +85,7 @@ export class AdminService {
       timestamp: new Date().toISOString(),
     };
 
-    await this.cache.set(cacheKey, stats, 60);
+    await this.cache.set(cacheKey, JSON.stringify(stats), 60);
     return stats;
   }
 
@@ -206,8 +206,8 @@ export class AdminService {
           _count: {
             select: {
               listings: true,
-              transactionsBuyer: true,
-              transactionsSeller: true,
+              transactionsAsBuyer: true,
+              transactionsAsSeller: true,
               messages: true,
               reports: true,
             },
@@ -241,8 +241,8 @@ export class AdminService {
         _count: {
           select: {
             listings: true,
-            transactionsBuyer: true,
-            transactionsSeller: true,
+            transactionsAsBuyer: true,
+            transactionsAsSeller: true,
             messages: true,
             reports: true,
             ratingsReceived: true,
@@ -259,7 +259,7 @@ export class AdminService {
             },
           },
         },
-        transactionsBuyer: {
+        transactionsAsBuyer: {
           take: 5,
           orderBy: { createdAt: 'desc' },
           include: {
@@ -271,7 +271,7 @@ export class AdminService {
             },
           },
         },
-        transactionsSeller: {
+        transactionsAsSeller: {
           take: 5,
           orderBy: { createdAt: 'desc' },
           include: {
