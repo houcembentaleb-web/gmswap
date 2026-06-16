@@ -1,48 +1,43 @@
-// À ajouter dans SearchService
-async getFacets(query: SearchQueryDto) {
-  const where = this.buildWhereClause(query);
-  
-  const [categories, platforms, conditions, priceRange] = await Promise.all([
-    this.prisma.listing.groupBy({
-      by: ['category'],
-      where,
-      _count: true,
-    }),
-    this.prisma.listing.groupBy({
-      by: ['platform'],
-      where,
-      _count: true,
-    }),
-    this.prisma.listing.groupBy({
-      by: ['condition'],
-      where,
-      _count: true,
-    }),
-    this.prisma.listing.aggregate({
-      where,
-      _min: { price: true },
-      _max: { price: true },
-      _avg: { price: true },
-    }),
-  ]);
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { SearchService } from './search.service';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { IsAdminGuard } from '../admin/guards/is-admin.guard';
 
-  return {
-    categories: categories.map(c => ({
-      name: c.category,
-      count: c._count,
-    })),
-    platforms: platforms.map(p => ({
-      name: p.platform,
-      count: p._count,
-    })),
-    conditions: conditions.map(c => ({
-      name: c.condition,
-      count: c._count,
-    })),
-    priceRange: {
-      min: priceRange._min.price || 0,
-      max: priceRange._max.price || 1000,
-      avg: priceRange._avg.price || 0,
-    },
-  };
+@Controller('search')
+export class SearchController {
+  constructor(private searchService: SearchService) {}
+
+  @Get()
+  @Throttle({ default: { limit: 30, ttl: 60 } })
+  async search(@Query() query: any) {
+    return this.searchService.search(query);
+  }
+
+  @Get('autocomplete')
+  @Throttle({ default: { limit: 50, ttl: 60 } })
+  async autocomplete(
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.searchService.autocomplete(q, parseInt(limit) || 10);
+  }
+
+  @Get('suggestions')
+  async suggestions(@Query('q') q: string) {
+    return this.searchService.getSuggestions(q);
+  }
+
+  @Post('reindex')
+  @UseGuards(JwtAuthGuard, IsAdminGuard)
+  async reindex() {
+    await this.searchService.reindexAll();
+    return { message: 'Reindex completed' };
+  }
 }
