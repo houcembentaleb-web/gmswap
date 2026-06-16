@@ -325,6 +325,9 @@ model Message {
   type           String   @default("TEXT")
   offerPrice     Float?
   
+  listingId   String?
+  listing     Listing?  @relation(fields: [listingId], references: [id])
+  
   readAt         DateTime?
   
   createdAt      DateTime @default(now())
