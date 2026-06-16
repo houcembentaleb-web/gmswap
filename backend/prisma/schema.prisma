@@ -58,7 +58,7 @@ model User {
   profile       UserProfile?
   reputation    UserReputation?
   trustScore    TrustScore?
-  trustScores   TrustScore[] @relation("UserTrustScores")  // ✅ Correction ajoutée ici
+  trustScores   TrustScore[] @relation("UserTrustScores")
   appeals       Appeal[]
   moderationActions ModerationAction[]
   reviewsGiven  Review[] @relation("reviewsGiven")
@@ -72,7 +72,6 @@ model User {
   preferences   UserPreference?
   recommendationCache RecommendationCache[]
   
-  // Relations ajoutées pour corriger les erreurs
   priceDropNotifications PriceDropNotification[]
   pushTokens PushToken[]
   trustEdgesFrom TrustEdge[] @relation("TrustFrom")
@@ -198,7 +197,6 @@ model Listing {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  // Relations
   images        ListingImage[]
   transactions  Transaction[]
   orders        Order[]
@@ -591,7 +589,6 @@ model Reservation {
   
   expiresAt   DateTime
   
-  // Fix: One-to-one relation corrected
   transactionId String? @unique
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
   
@@ -866,6 +863,8 @@ model Report {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  appeals     Appeal[]
 
   @@index([reporterId])
   @@index([targetType, targetId])
