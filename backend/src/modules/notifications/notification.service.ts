@@ -13,7 +13,10 @@ export type NotificationType =
   | 'RESERVATION'
   | 'PAYMENT'
   | 'MODERATION'
-  | 'WISHLIST';
+  | 'WISHLIST'
+  | 'PRICE_DROP'
+  | 'TRANSACTION'
+  | 'ORDER';
 
 @Injectable()
 export class NotificationService {
@@ -227,13 +230,57 @@ export class NotificationService {
   ) {
     return this.create({
       userId,
-      type: 'PAYMENT',
+      type: 'ORDER',
       title: '🛒 Nouvelle commande',
       body: `Vous avez reçu une commande pour "${listingTitle}"`,
       icon: '🛒',
       link: `/orders/${orderId}`,
       referenceId: orderId,
       referenceType: 'ORDER',
+      priority: 1,
+    });
+  }
+
+  async notifyPriceDrop(
+    userId: string,
+    listingId: string,
+    listingTitle: string,
+    oldPrice: number,
+    newPrice: number,
+  ) {
+    return this.create({
+      userId,
+      type: 'PRICE_DROP',
+      title: '💰 Prix en baisse !',
+      body: `"${listingTitle}" est passé de ${oldPrice} DT à ${newPrice} DT`,
+      icon: '💰',
+      link: `/listing/${listingId}`,
+      referenceId: listingId,
+      referenceType: 'LISTING',
+      priority: 1,
+    });
+  }
+
+  async notifyTransactionCompleted(
+    userId: string,
+    transactionId: string,
+    listingTitle: string,
+    role: 'buyer' | 'seller',
+  ) {
+    const emoji = role === 'buyer' ? '📦' : '🎉';
+    const title = role === 'buyer' 
+      ? '📦 Transaction terminée'
+      : '🎉 Transaction terminée';
+
+    return this.create({
+      userId,
+      type: 'TRANSACTION',
+      title,
+      body: `"${listingTitle}" - ${role === 'buyer' ? 'Vous avez reçu votre article' : 'Vous avez vendu votre article'}`,
+      icon: emoji,
+      link: `/transactions/${transactionId}`,
+      referenceId: transactionId,
+      referenceType: 'TRANSACTION',
       priority: 1,
     });
   }
