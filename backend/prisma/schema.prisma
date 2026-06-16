@@ -67,6 +67,20 @@ model User {
   ordersBuyer   Order[] @relation("buyerOrders")
   ordersSeller  Order[] @relation("sellerOrders")
   sellerStats   SellerStats?
+  interactions  UserInteraction[]
+  preferences   UserPreference?
+  recommendationCache RecommendationCache[]
+  
+  // Relations ajoutées pour corriger les erreurs
+  priceDropNotifications PriceDropNotification[]
+  pushTokens PushToken[]
+  trustEdgesFrom TrustEdge[] @relation("TrustFrom")
+  trustEdgesTo TrustEdge[] @relation("TrustTo")
+  trustScores TrustScore[]
+  moderatedReports Report[] @relation("ModeratedReports")
+  moderationAuditLogs ModerationAuditLog[]
+  appealsReviewed Appeal[] @relation("AppealReviewer")
+  auditLogs AuditLog[]
 
   @@index([email])
   @@index([username])
@@ -198,6 +212,7 @@ model Listing {
   reservations  Reservation[]
   reviews       Review[]
   priceDropNotifications PriceDropNotification[]
+  interactions  UserInteraction[]
 
   @@index([userId])
   @@index([category])
@@ -576,7 +591,8 @@ model Reservation {
   
   expiresAt   DateTime
   
-  transactionId String?
+  // Fix: One-to-one relation corrected
+  transactionId String? @unique
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
   
   createdAt   DateTime @default(now())
@@ -751,10 +767,7 @@ model TrustEdge {
   id          String   @id @default(uuid())
   
   fromUserId  String
-  fromUser    User     @relation("TrustFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
-  
   toUserId    String
-  toUser      User     @relation("TrustTo", fields: [toUserId], references: [id], onDelete: Cascade)
   
   type        String
   weight      Float
@@ -766,6 +779,9 @@ model TrustEdge {
   
   expiresAt   DateTime?
   createdAt   DateTime @default(now())
+
+  fromUser    User @relation("TrustFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User @relation("TrustTo", fields: [toUserId], references: [id], onDelete: Cascade)
 
   @@unique([fromUserId, toUserId, type])
   @@index([fromUserId])
@@ -792,6 +808,8 @@ model TrustScore {
   
   computedAt  DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  cluster     TrustCluster? @relation(fields: [clusterId], references: [id])
 
   @@index([userId])
   @@index([globalScore])
@@ -898,6 +916,8 @@ model ModerationRule {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  flaggedContent FlaggedContent[]
 
   @@map("moderation_rules")
 }
@@ -1079,4 +1099,92 @@ model EmailLog {
   @@index([to])
   @@index([sentAt])
   @@map("email_logs")
+}
+
+// ============================================
+// RECOMMENDATION ENGINE
+// ============================================
+
+model UserInteraction {
+  id          String   @id @default(uuid())
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  type        String   // VIEW | CLICK | SAVE | CHAT | PURCHASE
+  weight      Float    @default(1.0)
+  
+  sessionId   String?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([listingId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId, type])
+  @@map("user_interactions")
+}
+
+model UserPreference {
+  id          String   @id @default(uuid())
+  
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryWeights Json?
+  platformWeights Json?
+  
+  minPrice    Float?
+  maxPrice    Float?
+  
+  minRating   Float?
+  preferVerified Boolean @default(false)
+  
+  updatedAt   DateTime @default(now())
+
+  @@map("user_preferences")
+}
+
+model SimilarityScore {
+  id          String   @id @default(uuid())
+  
+  userIdA     String
+  userIdB     String
+  
+  score       Float
+  commonItems Int      @default(0)
+  
+  computedAt  DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@unique([userIdA, userIdB])
+  @@index([userIdA])
+  @@index([score])
+  @@map("similarity_scores")
+}
+
+model RecommendationCache {
+  id          String   @id @default(uuid())
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  listingIds  String[]
+  scores      Json?
+  
+  type        String   // PERSONALIZED | TRENDING | SIMILAR
+  
+  expiresAt   DateTime
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("recommendation_cache")
 }
