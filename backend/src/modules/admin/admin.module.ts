@@ -8,6 +8,7 @@ import { CacheService } from '../../infrastructure/cache/cache.service';
 import { RedisService } from '../../infrastructure/redis/redis.service';
 import { NotificationService } from '../notifications/notification.service';
 import { EventBusService } from '../../infrastructure/event-bus/event-bus.service';
+import { QueueService } from '../../infrastructure/queue/queue.service';
 
 @Module({
   controllers: [AdminController],
@@ -19,6 +20,7 @@ import { EventBusService } from '../../infrastructure/event-bus/event-bus.servic
     RedisService,
     NotificationService,
     EventBusService,
+    QueueService,
   ],
   exports: [AdminService],
 })
