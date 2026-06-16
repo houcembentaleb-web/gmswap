@@ -39,10 +39,10 @@ export class RecommendationService {
       },
     });
 
-    // Update user preferences asynchronously
+    // Mettre à jour les préférences utilisateur de manière asynchrone
     await this.updateUserPreferences(data.userId);
 
-    // Invalidate recommendation cache
+    // Invalider le cache de recommandations
     await this.invalidateRecommendations(data.userId);
 
     return interaction;
@@ -56,18 +56,22 @@ export class RecommendationService {
     userId: string,
     limit: number = 20,
   ): Promise<any[]> {
-    // Check cache
+    // Vérifier le cache
     const cacheKey = `recommendations:personalized:${userId}`;
-    const cached = await this.cache.get(cacheKey);
+    const cached = await this.cache.get<string>(cacheKey);
     if (cached) {
-      const listingIds = JSON.parse(cached);
-      return this.getListingsByIds(listingIds);
+      try {
+        const listingIds = JSON.parse(cached) as string[];
+        return this.getListingsByIds(listingIds);
+      } catch {
+        // Si le cache est corrompu, continuer
+      }
     }
 
-    // Get user preferences
+    // Récupérer les préférences utilisateur
     const preferences = await this.getUserPreferences(userId);
 
-    // Get interactions (last 30 days)
+    // Récupérer les interactions (30 derniers jours)
     const interactions = await this.prisma.userInteraction.findMany({
       where: {
         userId,
@@ -89,10 +93,10 @@ export class RecommendationService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Get viewed listings (to exclude)
+    // Exclure les annonces déjà vues
     const viewedIds = interactions.map(i => i.listingId);
 
-    // 1. Content-based recommendations
+    // 1. Recommandations basées sur le contenu
     const contentBased = await this.getContentBasedRecommendations(
       userId,
       preferences,
@@ -100,20 +104,20 @@ export class RecommendationService {
       limit,
     );
 
-    // 2. Collaborative filtering recommendations
+    // 2. Recommandations collaboratives
     const collaborative = await this.getCollaborativeRecommendations(
       userId,
       viewedIds,
       limit,
     );
 
-    // 3. Trending recommendations (fallback)
+    // 3. Recommandations tendances
     const trending = await this.getTrendingRecommendations(
       viewedIds,
       limit,
     );
 
-    // Combine and rank
+    // Combiner et classer
     const combined = this.combineRecommendations(
       contentBased,
       collaborative,
@@ -121,9 +125,9 @@ export class RecommendationService {
       limit,
     );
 
-    // Cache results
+    // Mettre en cache
     const ids = combined.map(r => r.id);
-    await this.cache.set(cacheKey, JSON.stringify(ids), 300); // 5 minutes
+    await this.cache.set(cacheKey, JSON.stringify(ids), 300);
 
     return combined;
   }
@@ -138,12 +142,10 @@ export class RecommendationService {
     excludeIds: string[],
     limit: number,
   ): Promise<any[]> {
-    const preferencesData = preferences || await this.getUserPreferences(userId);
-    const weights = preferencesData?.categoryWeights || {};
+    const weights = preferences?.categoryWeights || {};
 
-    // Get top categories from preferences
     const categories = Object.entries(weights)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
       .slice(0, 3)
       .map(([category]) => category);
 
@@ -180,23 +182,19 @@ export class RecommendationService {
       take: limit * 2,
     });
 
-    // Score based on category match and price preference
     return listings
       .map((listing) => {
         let score = 0;
-        const categoryWeight = weights[listing.category] || 0.5;
+        const categoryWeight = (weights[listing.category] as number) || 0.5;
         score += categoryWeight * 0.5;
 
-        // Price preference
-        if (preferencesData?.minPrice && listing.price >= preferencesData.minPrice) {
+        if (preferences?.minPrice && listing.price >= preferences.minPrice) {
           score += 0.2;
         }
-        if (preferencesData?.maxPrice && listing.price <= preferencesData.maxPrice) {
+        if (preferences?.maxPrice && listing.price <= preferences.maxPrice) {
           score += 0.2;
         }
-
-        // Trust preference
-        if (preferencesData?.preferVerified && listing.user.isVerified) {
+        if (preferences?.preferVerified && listing.user.isVerified) {
           score += 0.1;
         }
 
@@ -215,7 +213,6 @@ export class RecommendationService {
     excludeIds: string[],
     limit: number,
   ): Promise<any[]> {
-    // Find similar users based on interactions
     const interactions = await this.prisma.userInteraction.findMany({
       where: {
         userId,
@@ -230,7 +227,6 @@ export class RecommendationService {
       return [];
     }
 
-    // Find users who interacted with same listings
     const similarUsers = await this.prisma.userInteraction.findMany({
       where: {
         listingId: { in: userListingIds },
@@ -245,7 +241,6 @@ export class RecommendationService {
       take: 500,
     });
 
-    // Count similarities
     const userSimilarity: Record<string, { count: number; score: number }> = {};
 
     for (const interaction of similarUsers) {
@@ -254,15 +249,13 @@ export class RecommendationService {
       }
       userSimilarity[interaction.userId].count++;
 
-      // Weight by interaction type
       const weight = interaction.type === 'PURCHASE' ? 3 :
                      interaction.type === 'SAVE' ? 2 : 1;
       userSimilarity[interaction.userId].score += weight;
     }
 
-    // Get top similar users
     const topSimilar = Object.entries(userSimilarity)
-      .sort((a, b) => b[1].score - a[1].score)
+      .sort((a, b) => (b[1] as any).score - (a[1] as any).score)
       .slice(0, 10)
       .map(([userId]) => userId);
 
@@ -270,7 +263,6 @@ export class RecommendationService {
       return [];
     }
 
-    // Get listings from similar users
     const similarListings = await this.prisma.userInteraction.findMany({
       where: {
         userId: { in: topSimilar },
@@ -300,7 +292,6 @@ export class RecommendationService {
       take: limit * 2,
     });
 
-    // Group by listing and score
     const listingScores: Record<string, { listing: any; score: number }> = {};
 
     for (const item of similarListings) {
@@ -311,7 +302,6 @@ export class RecommendationService {
           score: 0,
         };
       }
-      // Score based on interaction type from similar users
       const weight = item.type === 'PURCHASE' ? 3 :
                      item.type === 'SAVE' ? 2 : 1;
       listingScores[id].score += weight;
@@ -331,7 +321,6 @@ export class RecommendationService {
     excludeIds: string[],
     limit: number,
   ): Promise<any[]> {
-    // Get trending listings (views + saves + freshness)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const listings = await this.prisma.listing.findMany({
@@ -368,7 +357,6 @@ export class RecommendationService {
       take: limit * 2,
     });
 
-    // Score: views * 0.5 + saves * 1 + freshness bonus
     return listings
       .map((listing) => {
         const viewsScore = (listing.viewsCount || 0) * 0.5;
@@ -393,7 +381,6 @@ export class RecommendationService {
   ): any[] {
     const combined: Record<string, { listing: any; score: number; sources: string[] }> = {};
 
-    // Add content-based with weight
     for (const item of contentBased) {
       const id = item.id;
       combined[id] = {
@@ -403,7 +390,6 @@ export class RecommendationService {
       };
     }
 
-    // Add collaborative with weight
     for (const item of collaborative) {
       const id = item.id;
       if (combined[id]) {
@@ -418,7 +404,6 @@ export class RecommendationService {
       }
     }
 
-    // Add trending with weight
     for (const item of trending) {
       const id = item.id;
       if (combined[id]) {
@@ -433,7 +418,6 @@ export class RecommendationService {
       }
     }
 
-    // Sort by score and return
     return Object.values(combined)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
@@ -450,19 +434,27 @@ export class RecommendationService {
 
   private async getUserPreferences(userId: string) {
     const cacheKey = `preferences:${userId}`;
-    const cached = await this.cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    const cached = await this.cache.get<string>(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        // Si le cache est corrompu, continuer
+      }
+    }
 
     const preferences = await this.prisma.userPreference.findUnique({
       where: { userId },
     });
 
-    await this.cache.set(cacheKey, JSON.stringify(preferences), 300);
+    if (preferences) {
+      await this.cache.set(cacheKey, JSON.stringify(preferences), 300);
+    }
+
     return preferences;
   }
 
   private async updateUserPreferences(userId: string) {
-    // Get user interactions (last 30 days)
     const interactions = await this.prisma.userInteraction.findMany({
       where: {
         userId,
@@ -475,7 +467,6 @@ export class RecommendationService {
 
     if (interactions.length === 0) return;
 
-    // Calculate category preferences
     const categoryCounts: Record<string, { count: number; weight: number }> = {};
     const platformCounts: Record<string, number> = {};
     let totalWeight = 0;
@@ -500,13 +491,11 @@ export class RecommendationService {
       }
     }
 
-    // Normalize category weights
     const categoryWeights: Record<string, number> = {};
     for (const [category, data] of Object.entries(categoryCounts)) {
       categoryWeights[category] = totalWeight > 0 ? data.weight / totalWeight : 0.5;
     }
 
-    // Get price range
     const prices = interactions
       .map(i => i.listing?.price)
       .filter((p): p is number => p !== undefined && p !== null);
@@ -514,13 +503,11 @@ export class RecommendationService {
     const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
     const maxPrice = prices.length > 0 ? Math.max(...prices) : undefined;
 
-    // Get rating preference
     const avgRating = await this.prisma.rating.aggregate({
       where: { toUserId: userId },
       _avg: { score: true },
     });
 
-    // Upsert preferences
     await this.prisma.userPreference.upsert({
       where: { userId },
       create: {
@@ -542,17 +529,7 @@ export class RecommendationService {
       },
     });
 
-    // Invalidate cache
     await this.cache.delete(`preferences:${userId}`);
-  }
-
-  // ==========================================
-  // CACHE MANAGEMENT
-  // ==========================================
-
-  private async invalidateRecommendations(userId: string) {
-    await this.cache.delete(`recommendations:personalized:${userId}`);
-    await this.cache.delete(`recommendations:trending:${userId}`);
   }
 
   // ==========================================
@@ -612,17 +589,14 @@ export class RecommendationService {
       id: { not: listingId },
     };
 
-    // Match by category (primary)
     if (listing.category) {
       where.category = listing.category;
     }
 
-    // Match by platform (secondary)
     if (listing.platform) {
       where.platform = listing.platform;
     }
 
-    // Price range (within +/- 50%)
     if (listing.price) {
       where.price = {
         gte: listing.price * 0.5,
@@ -654,7 +628,6 @@ export class RecommendationService {
       take: limit,
     });
 
-    // If not enough, get trending in same category
     if (similar.length < limit) {
       const fallback = await this.prisma.listing.findMany({
         where: {
@@ -689,6 +662,15 @@ export class RecommendationService {
   }
 
   // ==========================================
+  // CACHE MANAGEMENT
+  // ==========================================
+
+  private async invalidateRecommendations(userId: string) {
+    await this.cache.delete(`recommendations:personalized:${userId}`);
+    await this.cache.delete(`recommendations:trending:${userId}`);
+  }
+
+  // ==========================================
   // SCHEDULED JOBS
   // ==========================================
 
@@ -708,9 +690,7 @@ export class RecommendationService {
 
   @Cron(CronExpression.EVERY_WEEK)
   async computeSimilarityScores() {
-    // This would compute similarity between users
-    // For large scale, this should be done incrementally
     this.logger.log('Computing similarity scores...');
-    // Implementation would be heavy - skipped for MVP
+    // Implementation simplifiée pour MVP
   }
 }
