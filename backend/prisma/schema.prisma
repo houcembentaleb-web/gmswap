@@ -80,6 +80,7 @@ model User {
   moderationAuditLogs ModerationAuditLog[]
   appealsReviewed Appeal[] @relation("AppealReviewer")
   auditLogs AuditLog[]
+  listingSaves ListingSave[]
 
   @@index([email])
   @@index([username])
@@ -810,6 +811,7 @@ model TrustScore {
   updatedAt   DateTime @updatedAt
 
   cluster     TrustCluster? @relation(fields: [clusterId], references: [id])
+  users       User[] @relation("UserTrustScores")
 
   @@index([userId])
   @@index([globalScore])
@@ -868,6 +870,8 @@ model Report {
   updatedAt   DateTime @updatedAt
 
   appeals     Appeal[]
+  reportedBy  User[] @relation("reportedBy")
+  listings    Listing[]
 
   @@index([reporterId])
   @@index([targetType, targetId])
