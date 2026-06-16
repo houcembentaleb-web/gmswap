@@ -12,7 +12,16 @@ import {
 } from '@nestjs/common';
 import { ReservationService } from './reservation.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { CreateReservationDto, ConfirmTransactionDto } from './dto';
+
+// DTOs définis directement dans le fichier
+export class CreateReservationDto {
+  listingId: string;
+  message?: string;
+}
+
+export class ConfirmTransactionDto {
+  status: 'completed' | 'cancelled';
+}
 
 @Controller('reservations')
 @UseGuards(JwtAuthGuard)
@@ -59,13 +68,5 @@ export class ReservationController {
     @Body() body: { reason?: string },
   ) {
     return this.reservationService.rejectReservation(id, req.user.id, body.reason);
-  }
-
-  @Put('transactions/:id/confirm')
-  async confirmTransaction(
-    @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.reservationService.confirmTransaction(id, req.user.id);
   }
 }
