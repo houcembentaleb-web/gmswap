@@ -51,7 +51,7 @@ export class ChatService {
           select: {
             messages: {
               where: {
-                isRead: false,
+                readAt: null,
                 senderId: { not: userId },
               },
             },
@@ -178,10 +178,9 @@ export class ChatService {
       where: {
         conversationId,
         senderId: { not: userId },
-        isRead: false,
+        readAt: null,
       },
       data: {
-        isRead: true,
         readAt: new Date(),
       },
     });
@@ -189,6 +188,8 @@ export class ChatService {
 
   async markMessageDelivered(messageId: string) {
     // Implementation for delivery confirmation
+    // For now, we just log it
+    console.log(`Message ${messageId} delivered`);
   }
 
   async getUnreadCount(userId: string) {
@@ -207,7 +208,7 @@ export class ChatService {
       where: {
         conversationId: { in: conversationIds },
         senderId: { not: userId },
-        isRead: false,
+        readAt: null,
       },
     });
   }
