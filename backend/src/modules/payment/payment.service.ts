@@ -1,13 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { EventBusService } from '../../infrastructure/event-bus/event-bus.service';
+import { NotificationService } from '../notifications/notification.service';
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private stripe: Stripe;
 
-  constructor(private eventBus: EventBusService) {
+  constructor(
+    private prisma: PrismaService, // ✅ Injection ajoutée
+    private eventBus: EventBusService,
+    private notificationService: NotificationService,
+  ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2023-10-16',
     });
@@ -108,6 +114,10 @@ export class PaymentService {
     return { received: true };
   }
 
+  // ==========================================
+  // HANDLE PAYMENT SUCCESS
+  // ==========================================
+
   private async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     const orderId = paymentIntent.metadata?.orderId;
     if (!orderId) {
@@ -115,28 +125,64 @@ export class PaymentService {
       return;
     }
 
-    // Update order status
+    // Récupérer la commande
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        listing: true,
+        buyer: true,
+        seller: true,
+      },
+    });
+
+    if (!order) {
+      this.logger.warn(`Order ${orderId} not found`);
+      return;
+    }
+
+    // Mettre à jour la commande
     await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'PAID',
         paidAt: new Date(),
         paymentMethod: 'CARD',
+        stripePaymentIntentId: paymentIntent.id,
       },
     });
 
-    // Update transaction
+    // Mettre à jour la transaction
     await this.prisma.transaction.update({
       where: { stripePaymentIntentId: paymentIntent.id },
       data: {
         status: 'SUCCEEDED',
         succeededAt: new Date(),
-        cardLast4: paymentIntent.payment_method?.card?.last4,
-        cardBrand: paymentIntent.payment_method?.card?.brand,
+        cardLast4: (paymentIntent.payment_method as any)?.card?.last4,
+        cardBrand: (paymentIntent.payment_method as any)?.card?.brand,
       },
     });
 
-    // Emit event
+    // Notifier l'acheteur
+    await this.notificationService.create({
+      userId: order.buyerId,
+      type: 'PAYMENT',
+      title: '💳 Paiement confirmé',
+      body: `Votre paiement pour "${order.listing.title}" a été confirmé.`,
+      icon: '💳',
+      link: `/orders/${orderId}`,
+    });
+
+    // Notifier le vendeur
+    await this.notificationService.create({
+      userId: order.sellerId,
+      type: 'PAYMENT',
+      title: '💳 Nouveau paiement reçu',
+      body: `Vous avez reçu un paiement pour "${order.listing.title}".`,
+      icon: '💳',
+      link: `/orders/${orderId}`,
+    });
+
+    // Émettre un événement
     await this.eventBus.emit({
       name: 'payment.succeeded',
       payload: { orderId, paymentIntentId: paymentIntent.id },
@@ -144,6 +190,10 @@ export class PaymentService {
       timestamp: new Date(),
     });
   }
+
+  // ==========================================
+  // HANDLE PAYMENT FAILURE
+  // ==========================================
 
   private async handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
     const orderId = paymentIntent.metadata?.orderId;
@@ -161,7 +211,28 @@ export class PaymentService {
         failedAt: new Date(),
       },
     });
+
+    // Notifier l'acheteur
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { buyer: true, listing: true },
+    });
+
+    if (order) {
+      await this.notificationService.create({
+        userId: order.buyerId,
+        type: 'PAYMENT',
+        title: '❌ Paiement échoué',
+        body: `Le paiement pour "${order.listing.title}" a échoué. Veuillez réessayer.`,
+        icon: '❌',
+        link: `/orders/${orderId}`,
+      });
+    }
   }
+
+  // ==========================================
+  // HANDLE REFUND
+  // ==========================================
 
   private async handleRefund(charge: Stripe.Charge) {
     const paymentIntentId = charge.payment_intent as string;
@@ -169,21 +240,36 @@ export class PaymentService {
 
     const transaction = await this.prisma.transaction.findFirst({
       where: { stripePaymentIntentId: paymentIntentId },
-      include: { order: true },
+      include: { order: { include: { buyer: true, seller: true, listing: true } } },
     });
 
-    if (transaction) {
-      await this.prisma.order.update({
-        where: { id: transaction.orderId },
-        data: { status: 'REFUNDED', refundedAt: new Date() },
-      });
+    if (!transaction) return;
 
-      await this.prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: 'REFUNDED',
-          refundedAt: new Date(),
-        },
+    await this.prisma.order.update({
+      where: { id: transaction.orderId },
+      data: {
+        status: 'REFUNDED',
+        refundedAt: new Date(),
+      },
+    });
+
+    await this.prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: 'REFUNDED',
+        refundedAt: new Date(),
+      },
+    });
+
+    // Notifier l'acheteur
+    if (transaction.order) {
+      await this.notificationService.create({
+        userId: transaction.order.buyerId,
+        type: 'PAYMENT',
+        title: '💸 Remboursement effectué',
+        body: `Vous avez été remboursé pour "${transaction.order.listing.title}".`,
+        icon: '💸',
+        link: `/orders/${transaction.orderId}`,
       });
     }
   }
