@@ -2,13 +2,12 @@ import { Controller, Get, Res, Param, Query } from '@nestjs/common';
 import { Response } from 'express';
 import { SeoService } from './seo.service';
 
+// Exporter les types pour qu'ils soient disponibles
+export { SitemapData, MetaTags } from './seo.service';
+
 @Controller()
 export class SeoController {
   constructor(private seoService: SeoService) {}
-
-  // ==========================================
-  // SITEMAP
-  // ==========================================
 
   @Get('sitemap.xml')
   async getSitemap(@Res() res: Response) {
@@ -23,10 +22,6 @@ export class SeoController {
     return this.seoService.generateSitemap();
   }
 
-  // ==========================================
-  // ROBOTS.TXT
-  // ==========================================
-
   @Get('robots.txt')
   getRobotsTxt(@Res() res: Response) {
     const txt = this.seoService.generateRobotsTxt();
@@ -34,10 +29,6 @@ export class SeoController {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(txt);
   }
-
-  // ==========================================
-  // META TAGS (for dynamic routes)
-  // ==========================================
 
   @Get('api/seo/meta')
   async getMetaTags(
