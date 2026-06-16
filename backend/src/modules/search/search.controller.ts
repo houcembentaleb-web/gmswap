@@ -1,40 +1,48 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { SearchService } from './search.service';
-import { SearchQueryDto } from './dto/search.dto';
-import { Throttle } from '@nestjs/throttler';
+// À ajouter dans SearchService
+async getFacets(query: SearchQueryDto) {
+  const where = this.buildWhereClause(query);
+  
+  const [categories, platforms, conditions, priceRange] = await Promise.all([
+    this.prisma.listing.groupBy({
+      by: ['category'],
+      where,
+      _count: true,
+    }),
+    this.prisma.listing.groupBy({
+      by: ['platform'],
+      where,
+      _count: true,
+    }),
+    this.prisma.listing.groupBy({
+      by: ['condition'],
+      where,
+      _count: true,
+    }),
+    this.prisma.listing.aggregate({
+      where,
+      _min: { price: true },
+      _max: { price: true },
+      _avg: { price: true },
+    }),
+  ]);
 
-@Controller('search')
-export class SearchController {
-  constructor(private searchService: SearchService) {}
-
-  @Get()
-  @Throttle({ default: { limit: 30, ttl: 60 } })
-  async search(@Query() query: SearchQueryDto) {
-    return this.searchService.search(query);
-  }
-
-  @Get('autocomplete')
-  @Throttle({ default: { limit: 50, ttl: 60 } })
-  async autocomplete(@Query('q') q: string, @Query('limit') limit?: string) {
-    return this.searchService.autocomplete(q, parseInt(limit) || 10);
-  }
-
-  @Get('suggestions')
-  async suggestions(@Query('q') q: string) {
-    return this.searchService.getSuggestions(q);
-  }
-
-  @Get('facets')
-  async getFacets(@Query() query: SearchQueryDto) {
-    const where = this.searchService['buildWhereClause'](query);
-    return this.searchService.getFacets(where);
-  }
-
-  // Admin only - reindex
-  @UseGuards(IsAdminGuard)
-  @Post('reindex')
-  async reindex() {
-    await this.searchService.reindexAll();
-    return { message: 'Reindex completed' };
-  }
+  return {
+    categories: categories.map(c => ({
+      name: c.category,
+      count: c._count,
+    })),
+    platforms: platforms.map(p => ({
+      name: p.platform,
+      count: p._count,
+    })),
+    conditions: conditions.map(c => ({
+      name: c.condition,
+      count: c._count,
+    })),
+    priceRange: {
+      min: priceRange._min.price || 0,
+      max: priceRange._max.price || 1000,
+      avg: priceRange._avg.price || 0,
+    },
+  };
 }
