@@ -9,7 +9,7 @@ import {
   Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { NotificationService } from './notification.service';
+import { NotificationService, NotificationType } from './notification.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
 @Controller('notifications')
@@ -25,12 +25,15 @@ export class NotificationController {
     @Query('type') type?: string,
     @Query('read') read?: string,
   ) {
+    // Convert type to NotificationType if provided
+    const notificationType = type as NotificationType;
+    
     return this.notificationService.getNotifications(
       req.user.id,
       parseInt(page) || 1,
       parseInt(limit) || 20,
       {
-        type,
+        type: notificationType,
         isRead: read === 'true' ? true : read === 'false' ? false : undefined,
       },
     );
