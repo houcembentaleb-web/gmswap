@@ -55,7 +55,10 @@ export class QueueService implements OnModuleInit {
   async getQueue(name: string): Promise<Queue> {
     if (!this.queues.has(name)) {
       const queue = new Queue(name, {
-        connection: this.redis.getClient(),
+        connection: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+        },
         defaultJobOptions: {
           attempts: 3,
           backoff: {
@@ -79,7 +82,10 @@ export class QueueService implements OnModuleInit {
     }
 
     const worker = new Worker(queueName, handler, {
-      connection: this.redis.getClient(),
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+      },
       concurrency: 5,
     });
 
@@ -100,7 +106,6 @@ export class QueueService implements OnModuleInit {
 
   private async handleEmailJob(job: Job) {
     const { to, subject, html, userId } = job.data;
-    // Implementation with email provider
     this.logger.log(`Sending email to ${to}: ${subject}`);
     // Add your email service logic here
   }
