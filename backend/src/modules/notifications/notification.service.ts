@@ -2,7 +2,18 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
-import { NotificationType } from './dto/notification.dto';
+
+// Définition des types de notification
+export type NotificationType = 
+  | 'MESSAGE'
+  | 'LISTING'
+  | 'DEAL'
+  | 'REVIEW'
+  | 'SYSTEM'
+  | 'RESERVATION'
+  | 'PAYMENT'
+  | 'MODERATION'
+  | 'WISHLIST';
 
 @Injectable()
 export class NotificationService {
@@ -20,7 +31,7 @@ export class NotificationService {
 
   async create(data: {
     userId: string;
-    type: string;
+    type: NotificationType;
     title: string;
     body: string;
     icon?: string;
@@ -39,6 +50,7 @@ export class NotificationService {
         link: data.link,
         referenceId: data.referenceId,
         referenceType: data.referenceType,
+        priority: data.priority || 0,
       },
     });
 
@@ -188,6 +200,44 @@ export class NotificationService {
     });
   }
 
+  async notifyNewReservation(
+    userId: string,
+    reservationId: string,
+    listingTitle: string,
+    buyerId: string,
+  ) {
+    return this.create({
+      userId,
+      type: 'RESERVATION',
+      title: '📦 Nouvelle réservation',
+      body: `Votre annonce "${listingTitle}" a été réservée`,
+      icon: '📦',
+      link: `/reservations/${reservationId}`,
+      referenceId: reservationId,
+      referenceType: 'RESERVATION',
+      priority: 1,
+    });
+  }
+
+  async notifyNewOrder(
+    userId: string,
+    orderId: string,
+    listingTitle: string,
+    buyerId: string,
+  ) {
+    return this.create({
+      userId,
+      type: 'PAYMENT',
+      title: '🛒 Nouvelle commande',
+      body: `Vous avez reçu une commande pour "${listingTitle}"`,
+      icon: '🛒',
+      link: `/orders/${orderId}`,
+      referenceId: orderId,
+      referenceType: 'ORDER',
+      priority: 1,
+    });
+  }
+
   // ==========================================
   // GET NOTIFICATIONS
   // ==========================================
@@ -196,7 +246,7 @@ export class NotificationService {
     userId: string,
     page: number = 1,
     limit: number = 20,
-    filters?: { type?: string; isRead?: boolean },
+    filters?: { type?: NotificationType; isRead?: boolean },
   ) {
     const skip = (page - 1) * limit;
 
@@ -358,7 +408,7 @@ export class NotificationService {
   async bulkCreate(
     notifications: Array<{
       userId: string;
-      type: string;
+      type: NotificationType;
       title: string;
       body: string;
       icon?: string;
