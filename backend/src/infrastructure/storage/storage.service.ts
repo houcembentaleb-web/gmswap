@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import * as sharp from 'sharp';
 
 @Injectable()
 export class StorageService {
@@ -20,7 +19,7 @@ export class StorageService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File, folder: string = 'uploads'): Promise<string> {
+  async uploadFile(file: any, folder: string = 'uploads'): Promise<string> {
     const key = `${folder}/${uuidv4()}-${file.originalname}`;
     
     await this.s3.send(new PutObjectCommand({
@@ -34,19 +33,15 @@ export class StorageService {
     return this.getPublicUrl(key);
   }
 
-  async uploadImage(file: Express.Multer.File, folder: string = 'images'): Promise<string> {
-    const processed = await sharp(file.buffer)
-      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toBuffer();
-
-    const key = `${folder}/${uuidv4()}.jpg`;
+  async uploadImage(file: any, folder: string = 'images'): Promise<string> {
+    // Pour l'instant, upload direct sans compression
+    const key = `${folder}/${uuidv4()}-${file.originalname}`;
     
     await this.s3.send(new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
-      Body: processed,
-      ContentType: 'image/jpeg',
+      Body: file.buffer,
+      ContentType: file.mimetype,
       CacheControl: 'public, max-age=31536000',
     }));
 
