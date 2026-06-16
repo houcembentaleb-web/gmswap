@@ -1,3 +1,6 @@
+// ============================================
+// 4. admin.service.ts (corrigé)
+// ============================================
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { EventBusService } from '../../infrastructure/event-bus/event-bus.service';
@@ -22,7 +25,7 @@ export class AdminService {
   async getDashboardStats() {
     const cacheKey = 'admin:dashboard:stats';
     const cached = await this.cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) return JSON.parse(cached as string);
 
     const [
       totalUsers,
