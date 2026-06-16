@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsEnum, Min, Max, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, Min, Max, IsArray, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SearchQueryDto {
@@ -32,7 +32,7 @@ export class SearchQueryDto {
 
   @IsString()
   @IsOptional()
-  @IsEnum(['relevance', 'newest', 'oldest', 'price_asc', 'price_desc', 'popular', 'trending', 'rating'])
+  @IsIn(['relevance', 'newest', 'oldest', 'price_asc', 'price_desc', 'popular', 'trending', 'rating'])
   sort?: string;
 
   @IsString()
@@ -85,6 +85,8 @@ export class SearchQueryDto {
   limit?: number;
 }
 
+// For internal use - extends SearchQueryDto with additional filters
 export class SearchFiltersDto extends SearchQueryDto {
-  // Extended filters for internal use
+  // All filters are already included in SearchQueryDto
+  // This class exists for type consistency in the service
 }
