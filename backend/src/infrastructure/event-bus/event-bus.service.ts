@@ -1,3 +1,6 @@
+// ============================================
+// 1. event-bus.service.ts
+// ============================================
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { RedisService } from '../redis/redis.service';
@@ -61,7 +64,10 @@ export class EventBusService {
     
     if (!this.queues.has(queueName)) {
       const queue = new Queue(queueName, {
-        connection: this.redis.getClient(),
+        connection: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+        },
         defaultJobOptions: {
           attempts: 3,
           backoff: {
