@@ -45,12 +45,12 @@ model User {
   messages      Message[]
   ratingsGiven  Rating[] @relation("ratingsGiven")
   ratingsReceived Rating[] @relation("ratingsReceived")
-  conversationsA Conversation[] @relation("userA")
-  conversationsB Conversation[] @relation("userB")
+  conversationsAsBuyer Conversation[] @relation("BuyerConversations")
+  conversationsAsSeller Conversation[] @relation("SellerConversations")
   wishlist      Wishlist?
   notifications Notification[]
-  transactionsBuyer Transaction[] @relation("buyer")
-  transactionsSeller Transaction[] @relation("seller")
+  transactionsAsBuyer Transaction[] @relation("buyerTransactions")
+  transactionsAsSeller Transaction[] @relation("sellerTransactions")
   sessions      Session[]
   reports       Report[]
   reportedBy    Report[] @relation("reportedBy")
@@ -63,10 +63,10 @@ model User {
   moderationActions ModerationAction[]
   reviewsGiven  Review[] @relation("reviewsGiven")
   reviewsReceived Review[] @relation("reviewsReceived")
-  reservationsBuyer Reservation[] @relation("buyerReservations")
-  reservationsSeller Reservation[] @relation("sellerReservations")
-  ordersBuyer   Order[] @relation("buyerOrders")
-  ordersSeller  Order[] @relation("sellerOrders")
+  reservationsAsBuyer Reservation[] @relation("buyerReservations")
+  reservationsAsSeller Reservation[] @relation("sellerReservations")
+  ordersAsBuyer   Order[] @relation("buyerOrders")
+  ordersAsSeller  Order[] @relation("sellerOrders")
   sellerStats   SellerStats?
   interactions  UserInteraction[]
   preferences   UserPreference?
@@ -341,7 +341,7 @@ model Message {
 model Wishlist {
   id          String   @id @default(uuid())
   
-  userId      String
+  userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   name        String   @default("Mes favoris")
@@ -503,6 +503,7 @@ model Transaction {
   updatedAt   DateTime @updatedAt
 
   reservations Reservation[]
+  reviews     Review[]
 
   @@index([listingId])
   @@index([buyerId])
