@@ -7,6 +7,7 @@ import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { RedisService } from '../../infrastructure/redis/redis.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
+import { EventBusService } from '../../infrastructure/event-bus/event-bus.service'; // ✅ AJOUT
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { QueueService } from '../../infrastructure/queue/queue.service';
     PrismaService,
     RedisService,
     QueueService,
+    EventBusService, // ✅ AJOUT
   ],
   exports: [ChatService],
 })
