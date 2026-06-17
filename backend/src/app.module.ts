@@ -4,8 +4,14 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
 
-// Seul le module Admin existe pour l'instant
+// ✅ IMPORTS DE TOUS LES MODULES
 import { AdminModule } from './modules/admin/admin.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { SearchModule } from './modules/search/search.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 
 // Infrastructure
 import { PrismaService } from './infrastructure/database/prisma.service';
@@ -43,8 +49,14 @@ import { QueueService } from './infrastructure/queue/queue.service';
       },
     }),
     
-    // Modules existants
+    // ✅ TOUS LES MODULES ACTIVÉS
     AdminModule,
+    AuthModule,
+    ChatModule,
+    NotificationsModule,
+    RecommendationsModule,
+    SearchModule,
+    WishlistModule,
   ],
   providers: [
     PrismaService,
