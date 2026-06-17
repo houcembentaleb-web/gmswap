@@ -26,10 +26,11 @@ export class ChatController {
     @Request() req,
     @Body() body: { otherUserId: string; listingId?: string },
   ) {
+    // ✅ Correction : on n'utilise que 2 arguments
     return this.chatService.createConversation(
       req.user.id,
       body.otherUserId,
-      body.listingId,
+      // body.listingId est ignoré si la méthode n'en prend que 2
     );
   }
 
