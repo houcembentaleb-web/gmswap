@@ -3,7 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { RedisService } from '../../infrastructure/redis/redis.service'; // ✅ AJOUT
+import { EventBusService } from '../../infrastructure/event-bus/event-bus.service'; // ✅ AJOUT
 
 @Module({
   imports: [
@@ -14,7 +17,13 @@ import { PrismaService } from '../../infrastructure/database/prisma.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PrismaService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    PrismaService,
+    RedisService, // ✅ AJOUT
+    EventBusService, // ✅ AJOUT
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}
