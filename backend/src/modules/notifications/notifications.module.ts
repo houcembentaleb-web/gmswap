@@ -5,7 +5,7 @@ import { NotificationController } from './notification.controller';
 import { NotificationGateway } from './notification.gateway';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
-import { RedisService } from '../../infrastructure/redis/redis.service'; // ✅ AJOUT
+import { RedisService } from '../../infrastructure/redis/redis.service';
 
 @Module({
   imports: [
@@ -20,8 +20,8 @@ import { RedisService } from '../../infrastructure/redis/redis.service'; // ✅ 
     NotificationGateway,
     PrismaService,
     QueueService,
-    RedisService, // ✅ AJOUT
+    RedisService,
   ],
-  exports: [NotificationService],
+  exports: [NotificationService, QueueService, RedisService], // ✅ EXPORT
 })
 export class NotificationsModule {}
