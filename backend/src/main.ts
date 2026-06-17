@@ -3,8 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import helmet from 'helmet';
-// import * as compression from 'compression'; // ← Supprimé
-import * as cookieParser from 'cookie-parser';
+// import * as cookieParser from 'cookie-parser'; // ← Supprimé
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -22,8 +21,7 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   }));
   
-  // app.use(compression()); // ← Supprimé
-  app.use(cookieParser());
+  // app.use(cookieParser()); // ← Supprimé
   
   // CORS
   app.enableCors({
