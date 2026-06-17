@@ -5,7 +5,8 @@ import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { CacheService } from '../../infrastructure/cache/cache.service';
 import { EventBusService } from '../../infrastructure/event-bus/event-bus.service';
-import { QueueService } from '../../infrastructure/queue/queue.service'; // ✅ AJOUT
+import { QueueService } from '../../infrastructure/queue/queue.service';
+import { RedisService } from '../../infrastructure/redis/redis.service'; // ✅ AJOUT
 
 @Module({
   controllers: [WishlistController],
@@ -15,7 +16,8 @@ import { QueueService } from '../../infrastructure/queue/queue.service'; // ✅ 
     NotificationService,
     CacheService,
     EventBusService,
-    QueueService, // ✅ AJOUT
+    QueueService,
+    RedisService, // ✅ AJOUT
   ],
   exports: [WishlistService],
 })
