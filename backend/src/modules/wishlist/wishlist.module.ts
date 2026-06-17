@@ -4,7 +4,8 @@ import { WishlistService } from './wishlist.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { CacheService } from '../../infrastructure/cache/cache.service';
-import { EventBusService } from '../../infrastructure/event-bus/event-bus.service'; // ✅ AJOUT
+import { EventBusService } from '../../infrastructure/event-bus/event-bus.service';
+import { QueueService } from '../../infrastructure/queue/queue.service'; // ✅ AJOUT
 
 @Module({
   controllers: [WishlistController],
@@ -13,7 +14,8 @@ import { EventBusService } from '../../infrastructure/event-bus/event-bus.servic
     PrismaService,
     NotificationService,
     CacheService,
-    EventBusService, // ✅ AJOUT
+    EventBusService,
+    QueueService, // ✅ AJOUT
   ],
   exports: [WishlistService],
 })
