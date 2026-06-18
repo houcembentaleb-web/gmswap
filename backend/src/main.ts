@@ -3,7 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import helmet from 'helmet';
-// import * as cookieParser from 'cookie-parser'; // ← Supprimé
+import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -21,7 +21,7 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   }));
   
-  // app.use(cookieParser()); // ← Supprimé
+  app.use(cookieParser());
   
   // CORS
   app.enableCors({
@@ -33,14 +33,14 @@ async function bootstrap() {
     maxAge: 86400,
   });
   
-  // Validation
+  // ✅ CORRECTION : Activer la conversion implicite
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: {
-        enableImplicitConversion: false,
+        enableImplicitConversion: true, // ← Change false → true
       },
       validationError: {
         target: false,
