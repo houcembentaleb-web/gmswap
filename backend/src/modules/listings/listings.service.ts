@@ -306,7 +306,7 @@ export class ListingsService {
   // IMAGES
   // ==========================================
 
-  async uploadImages(userId: string, listingId: string, files: Express.Multer.File[]) {
+  async uploadImages(userId: string, listingId: string, files: any[]) {
     const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
 
     if (!listing) {
