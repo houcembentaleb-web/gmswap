@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CacheService } from '../../infrastructure/cache/cache.service';
 
-interface SitemapData {
+export interface SitemapData {
   listings: {
     url: string;
     lastmod: Date;
@@ -16,7 +16,7 @@ interface SitemapData {
   }[];
 }
 
-interface MetaTags {
+export interface MetaTags {
   title: string;
   description: string;
   image: string;
@@ -32,10 +32,6 @@ export class SeoService {
     private prisma: PrismaService,
     private cache: CacheService,
   ) {}
-
-  // ==========================================
-  // GENERATE SITEMAP
-  // ==========================================
 
   async generateSitemap(): Promise<SitemapData> {
     const cacheKey = 'sitemap:data';
@@ -82,10 +78,6 @@ export class SeoService {
     await this.cache.set(cacheKey, JSON.stringify(sitemap), 3600);
     return sitemap;
   }
-
-  // ==========================================
-  // GENERATE SITEMAP XML
-  // ==========================================
 
   async generateSitemapXml(): Promise<string> {
     const data = await this.generateSitemap();
@@ -137,10 +129,6 @@ export class SeoService {
       .replace(/'/g, '&apos;');
   }
 
-  // ==========================================
-  // ROBOTS.TXT
-  // ==========================================
-
   generateRobotsTxt(): string {
     const baseUrl = process.env.APP_URL || 'https://gmswap.onrender.com';
 
@@ -163,10 +151,6 @@ Crawl-delay: 1
 Host: ${baseUrl.replace(/^https?:\/\//, '')}
 `;
   }
-
-  // ==========================================
-  // META TAGS
-  // ==========================================
 
   async getMetaTags(path: string, params?: { id?: string }): Promise<MetaTags> {
     const defaultMeta: MetaTags = {
@@ -228,10 +212,6 @@ Host: ${baseUrl.replace(/^https?:\/\//, '')}
     };
   }
 
-  // ==========================================
-  // OG IMAGE
-  // ==========================================
-
   async generateOgImage(listingId: string): Promise<string> {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
@@ -245,10 +225,6 @@ Host: ${baseUrl.replace(/^https?:\/\//, '')}
 
     return listing?.images[0]?.url || '/og-image.jpg';
   }
-
-  // ==========================================
-  // JSON-LD
-  // ==========================================
 
   async generateListingJsonLd(listingId: string): Promise<any> {
     const listing = await this.prisma.listing.findUnique({
