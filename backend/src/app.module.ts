@@ -17,6 +17,7 @@ import { HealthModule } from './modules/health/health.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { SeoModule } from './modules/seo/seo.module';
 
 // Infrastructure
 import { PrismaService } from './infrastructure/database/prisma.service';
@@ -67,6 +68,7 @@ import { QueueService } from './infrastructure/queue/queue.service';
     ReservationsModule,
     OrdersModule,
     PaymentsModule,
+    SeoModule,
   ],
   providers: [
     PrismaService,
