@@ -84,7 +84,7 @@ export class ListingsController {
   async uploadImages(
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: any[],
   ) {
     return this.listingsService.uploadImages(req.user.id, id, files);
   }
