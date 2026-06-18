@@ -14,7 +14,9 @@ import { SearchModule } from './modules/search/search.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { HealthModule } from './modules/health/health.module';
-import { ReservationsModule } from './modules/reservations/reservations.module'; // ✅ AJOUT
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 // Infrastructure
 import { PrismaService } from './infrastructure/database/prisma.service';
@@ -62,7 +64,9 @@ import { QueueService } from './infrastructure/queue/queue.service';
     WishlistModule,
     ListingsModule,
     HealthModule,
-    ReservationsModule, // ✅ AJOUT
+    ReservationsModule,
+    OrdersModule,
+    PaymentsModule,
   ],
   providers: [
     PrismaService,
