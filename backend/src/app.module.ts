@@ -12,7 +12,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { SearchModule } from './modules/search/search.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
-import { ListingsModule } from './modules/listings/listings.module'; // ✅ AJOUT
+import { ListingsModule } from './modules/listings/listings.module';
+import { HealthModule } from './modules/health/health.module'; // ✅ AJOUT
 
 // Infrastructure
 import { PrismaService } from './infrastructure/database/prisma.service';
@@ -58,7 +59,8 @@ import { QueueService } from './infrastructure/queue/queue.service';
     RecommendationsModule,
     SearchModule,
     WishlistModule,
-    ListingsModule, // ✅ AJOUT
+    ListingsModule,
+    HealthModule, // ✅ AJOUT
   ],
   providers: [
     PrismaService,
